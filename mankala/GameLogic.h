@@ -12,4 +12,5 @@ void initGame(struct gameState * game);
 int checkIfEnd(struct gameState * game);
 int getWinner(struct gameState * game);
 int makeMove(struct gameState * game, int move);
+void nextPlaye(struct gameState * game);
 #endif

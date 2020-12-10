@@ -4,7 +4,11 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    ,tcpSocket(new QTcpSocket(this))
 {
+    stream = new QDataStream(tcpSocket);
+    connect(tcpSocket, &QIODevice::readyRead, this, &MainWindow::readData);
+
     ui->setupUi(this);
     ui->gameWidget->setVisible(false);
     pits[0] = ui->pit0;
@@ -24,15 +28,26 @@ MainWindow::MainWindow(QWidget *parent)
 
 
 
-    player = 1;
+    player = 0;
 }
 
 MainWindow::~MainWindow()
 {
+    tcpSocket->disconnectFromHost();
     delete ui;
 }
 
-
+void MainWindow::readData()
+{
+    qint32 temp;
+    stream->startTransaction();
+    for (int i=0;i<14 ;i++ ) {
+        *stream >> temp;
+        qInfo() << temp<<"informacja \n ";
+        pits[i]->setText(QString::number(temp));
+    }
+    stream->commitTransaction();
+}
 
 
 void MainWindow::on_pushButtonStart_clicked()
@@ -48,8 +63,79 @@ void MainWindow::on_pushButtonStart_clicked()
         ui->labelPlayer0->setText(ui->lineEditName->text());
     }
 
-    for(int i=0;i<6;i++)
+    tcpSocket->connectToHost("127.0.0.1", 1234);
+
+
+    /*for(int i=0;i<6;i++)
     {
         pits[i + 7*player]->setEnabled(false);
-    }
+    }*/
+}
+
+
+
+
+void MainWindow::sendMove(int move)
+{
+    *stream << move;
+}
+
+void MainWindow::on_pit7_clicked()
+{
+    sendMove(0);
+}
+
+void MainWindow::on_pit11_clicked()
+{
+    sendMove(4);
+}
+
+void MainWindow::on_pit0_clicked()
+{
+    sendMove(0);
+}
+
+void MainWindow::on_pit1_clicked()
+{
+    sendMove(1);
+}
+
+void MainWindow::on_pit2_clicked()
+{
+    sendMove(2);
+}
+
+void MainWindow::on_pit3_clicked()
+{
+    sendMove(3);
+}
+
+void MainWindow::on_pit4_clicked()
+{
+    sendMove(4);
+}
+
+void MainWindow::on_pit5_clicked()
+{
+    sendMove(5);
+}
+
+void MainWindow::on_pit8_clicked()
+{
+    sendMove(1);
+}
+
+void MainWindow::on_pit9_clicked()
+{
+    sendMove(2);
+}
+
+void MainWindow::on_pit10_clicked()
+{
+    sendMove(3);
+}
+
+void MainWindow::on_pit12_clicked()
+{
+    sendMove(5);
 }

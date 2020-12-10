@@ -91,3 +91,8 @@ int makeMove(struct gameState * game, int move)
 		}
 	return 0;//poprawny ruch
 }
+
+void nextPlaye(struct gameState * game)
+{
+	game->currentPlayer = (game->currentPlayer+1)%2;
+}
