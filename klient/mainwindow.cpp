@@ -41,10 +41,39 @@ void MainWindow::readData()
 {
     qint32 temp;
     stream->startTransaction();
-    for (int i=0;i<14 ;i++ ) {
-        *stream >> temp;
-        qInfo() << temp<<"informacja \n ";
-        pits[i]->setText(QString::number(temp));
+    *stream >> temp;
+    if(temp == 2)
+    {
+        for (int i=0;i<14 ;i++ ) {
+            *stream >> temp;
+            qInfo() << temp<<"informacja \n ";
+            pits[i]->setText(QString::number(temp));
+        }
+    }
+    else if(temp == 1)
+    {
+
+        *stream >> player;
+        *stream>> temp;
+        QByteArray enemyName(temp, Qt::Uninitialized);
+        stream->readRawData( enemyName.data() , temp);
+        qInfo() << enemyName<<" przeciwnik \n ";
+        if(player)
+        {
+            ui->labelPlayer1->setText(ui->lineEditName->text());
+            ui->labelPlayer0->setText(enemyName);
+        }
+        else
+        {
+            ui->labelPlayer0->setText(ui->lineEditName->text());
+            ui->labelPlayer1->setText(enemyName);
+        }
+        for(int i=0;i<6;i++)
+        {
+            pits[i + 7*((player+1)%2)]->setEnabled(false);
+        }
+
+
     }
     stream->commitTransaction();
 }
@@ -54,17 +83,11 @@ void MainWindow::on_pushButtonStart_clicked()
 {
     ui->startingWidget->setVisible(false);
     ui->gameWidget->setVisible(true);
-    if(player)
-    {
-        ui->labelPlayer1->setText(ui->lineEditName->text());
-    }
-    else
-    {
-        ui->labelPlayer0->setText(ui->lineEditName->text());
-    }
+
 
     tcpSocket->connectToHost("127.0.0.1", 1234);
 
+    tcpSocket->write(ui->lineEditName->text().toUtf8());
 
     /*for(int i=0;i<6;i++)
     {

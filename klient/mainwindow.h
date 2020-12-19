@@ -50,7 +50,7 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QPushButton *pits[14];
-    int player;
+    qint32 player;
     QTcpSocket *tcpSocket;
     QDataStream *stream;
 
