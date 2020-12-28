@@ -49,6 +49,8 @@ private slots:
 
     void on_pushButtonBack_clicked();
 
+    void on_pushButtonSurrender_clicked();
+
 private:
     Ui::MainWindow *ui;
     QPushButton *pits[14];
@@ -59,5 +61,6 @@ private:
 
     void sendMove(int move);
     void readBoard();
+    void back2menu();
 };
 #endif // MAINWINDOW_H

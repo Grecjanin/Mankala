@@ -44,12 +44,13 @@ void foo(struct gameState gra)
 void sendGameState(struct gameState gra , int socket)
 {
 	int pom = 2;
-	pom = htonl(pom);
-	write(socket , &pom , sizeof(int));
-	int temp[14];
+	//pom = htonl(pom);
+	//write(socket , &pom , sizeof(int));
+	int temp[15];
+	temp[0] = htonl(pom);
 	for(int i=0;i<14;i++)
 	{
-		temp[i] = htonl(gra.board[i]);
+		temp[i+1] = htonl(gra.board[i]);
 	}
 	
 	write(socket , temp , sizeof(temp));
@@ -68,16 +69,29 @@ void sendInitInfo(char * name,int player , int socket)
 void sendEndingInfo(struct gameState gra , int socket)
 {
 	int pom = 3;
-	pom = htonl(pom);
-	write(socket , &pom , sizeof(int));
-	int temp[15];
+	//pom = htonl(pom);
+	//write(socket , &pom , sizeof(int));
+	int temp[16];
+	temp[0]=htonl(pom);
 	for(int i=0;i<14;i++)
 	{
-		temp[i] = htonl(gra.board[i]);
+		temp[i+1] = htonl(gra.board[i]);
 	}
-	temp[14] = htonl(getWinner(&gra));
+	temp[15] = htonl(getWinner(&gra));
 	
 	write(socket , temp , sizeof(temp));
+}
+
+void cleanAfterGame(struct epoll_event_data * epollData , struct thread_data_t *th_data,struct epoll_event *ev)
+{
+	epoll_ctl(th_data->epoll_fd, EPOLL_CTL_DEL, epollData->my_fd, ev);
+	close(epollData->my_fd);
+	epoll_ctl(th_data->epoll_fd, EPOLL_CTL_DEL, epollData->enemy_fd, ev);
+	close(epollData->enemy_fd);
+	//dealokacja pamieci
+	free(epollData->gra);
+	free(epollData->enemyData);
+	free(epollData);
 }
 
 
@@ -90,37 +104,45 @@ void *ThreadBehavior(void *t_data)
     //TODO
     for(;;) {
         epoll_wait(th_data->epoll_fd, &ev, 1, -1); //1 = maksymalnie jedno zdarzenie, -1 = bez timeout
-        int move;
+        int move[2];
         struct epoll_event_data * epollData = ev.data.ptr;
-        int readBytes = read(epollData->my_fd, &move, sizeof(int));
-        if ( readBytes>0 && ev.events==EPOLLIN && epollData->gra->currentPlayer == epollData->player ) {
-        		move = ntohl(move); 
-				printf("Odczytano: %d\n",move);
-				makeMove(epollData->gra , move);
-				if(checkIfEnd(epollData->gra) ==1){
-					foo(*(epollData->gra));
-					sendEndingInfo(*(epollData->gra) , epollData->my_fd);
-					sendEndingInfo(*(epollData->gra) , epollData->enemy_fd);
-					
-					
-					
-					epoll_ctl(th_data->epoll_fd, EPOLL_CTL_DEL, epollData->my_fd, &ev);
-					close(epollData->my_fd);
-					epoll_ctl(th_data->epoll_fd, EPOLL_CTL_DEL, epollData->enemy_fd, &ev);
-					close(epollData->enemy_fd);
-					//dealokacja pamieci
-					free(epollData->gra);
-					free(epollData->enemyData);
-					free(epollData);
+        int readBytes = read(epollData->my_fd, move, sizeof(int)*2);
+         
+        if ( readBytes>0 && ev.events==EPOLLIN )
+        {
+        		move[0] = ntohl(move[0]);
+        		move[1] = ntohl(move[1]);
+        		if(move[0]== 1 && epollData->gra->currentPlayer == epollData->player )
+        			{
+        		
+						printf("Odczytano: %d\n",move[1]);
+						makeMove(epollData->gra , move[1]);
+						if(checkIfEnd(epollData->gra) ==1){
+							foo(*(epollData->gra));
+							sendEndingInfo(*(epollData->gra) , epollData->my_fd);
+							sendEndingInfo(*(epollData->gra) , epollData->enemy_fd);
+							
+							
+							cleanAfterGame(epollData , th_data,&ev);
+							
+						}
+						else{
+							nextPlaye(epollData->gra);
+							foo(*(epollData->gra));
+							sendGameState(*(epollData->gra) , epollData->my_fd);
+							sendGameState(*(epollData->gra) , epollData->enemy_fd);
+						} 
+						
+				  }
+				else if (move[0]==2)
+				{
+					int pom = 4;
+					pom = htonl(pom);
+					write(epollData->enemy_fd , &pom , sizeof(int));
+					cleanAfterGame(epollData , th_data,&ev);
 				}
-				else{
-					nextPlaye(epollData->gra);
-					foo(*(epollData->gra));
-					sendGameState(*(epollData->gra) , epollData->my_fd);
-					sendGameState(*(epollData->gra) , epollData->enemy_fd);
-				} 
-				
-        }
+       }
+         
     }
 
     pthread_exit(NULL);
