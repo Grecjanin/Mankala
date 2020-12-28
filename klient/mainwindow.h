@@ -47,6 +47,8 @@ private slots:
 
     void on_pit12_clicked();
 
+    void on_pushButtonBack_clicked();
+
 private:
     Ui::MainWindow *ui;
     QPushButton *pits[14];
@@ -56,5 +58,6 @@ private:
     QByteArray enemyName;
 
     void sendMove(int move);
+    void readBoard();
 };
 #endif // MAINWINDOW_H

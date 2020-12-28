@@ -9,6 +9,7 @@ struct gameState{
 	int currentPlayer;//0 albo 1
 };
 void initGame(struct gameState * game);
+void initGameTestRemis(struct gameState * game);
 int checkIfEnd(struct gameState * game);
 int getWinner(struct gameState * game);
 int makeMove(struct gameState * game, int move);

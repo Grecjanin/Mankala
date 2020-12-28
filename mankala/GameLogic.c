@@ -14,6 +14,19 @@ void initGame(struct gameState * game)
 	game->currentPlayer=0;
 }
 
+void initGameTestRemis(struct gameState * game)
+{
+	for(int i=0;i<6;i++)
+	{
+		game->board[i]=0;
+		game->board[7+i]=0;
+	}
+	game->board[6]=0;
+	game->board[5]=1;
+	game->board[13]=1;
+	game->currentPlayer=0;
+}
+
 int checkIfEnd(struct gameState * game)//i przesuwa nie zdobyte kamienie do odpowiedniego domu
 {
 	int isEnd=1;

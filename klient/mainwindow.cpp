@@ -44,12 +44,7 @@ void MainWindow::readData()
     *stream >> temp;
     if(temp == 2)
     {
-        for (int i=0;i<14 ;i++ ) {
-            *stream >> temp;
-            //qInfo() << temp<<"informacja \n ";
-            pits[i]->setText(QString::number(temp));
-
-        }
+        readBoard();
         if(player == currentPlayer)ui->gameFlowLabel1->setText(ui->lineEditName->text());
         else ui->gameFlowLabel1->setText(enemyName);
         currentPlayer = (currentPlayer+1)%2;
@@ -81,6 +76,22 @@ void MainWindow::readData()
 
 
     }
+    else if(temp == 3)
+    {
+        readBoard();
+        ui->pushButtonBack->setVisible(true);
+        ui->pushButtonBack->setEnabled(true);
+        ui->gameFlowLabel0->setText("Wygrał");
+        *stream>> temp;
+        if(temp == -1)
+        {
+           ui->gameFlowLabel0->setText("Remis");
+           ui->gameFlowLabel1->setText("");
+        }
+        else if(player == temp)ui->gameFlowLabel1->setText(ui->lineEditName->text());
+        else ui->gameFlowLabel1->setText(enemyName);
+
+    }
     stream->commitTransaction();
 }
 
@@ -89,7 +100,7 @@ void MainWindow::on_pushButtonStart_clicked()
 {
     ui->startingWidget->setVisible(false);
     ui->gameWidget->setVisible(true);
-    ui->pushButtonBack->setVisible(true);
+    ui->pushButtonBack->setVisible(false);
 
 
     tcpSocket->connectToHost("127.0.0.1", 1234);
@@ -111,6 +122,17 @@ void MainWindow::sendMove(int move)
 
     *stream << move;
 
+}
+
+void MainWindow::readBoard()
+{
+    qint32 temp;
+    for (int i=0;i<14 ;i++ ) {
+        *stream >> temp;
+        //qInfo() << temp<<"informacja \n ";
+        pits[i]->setText(QString::number(temp));
+
+    }
 }
 
 void MainWindow::on_pit7_clicked()
@@ -171,4 +193,14 @@ void MainWindow::on_pit10_clicked()
 void MainWindow::on_pit12_clicked()
 {
     sendMove(5);
+}
+
+void MainWindow::on_pushButtonBack_clicked()
+{
+    tcpSocket->disconnectFromHost();
+    ui->gameFlowLabel0->setText("Ruch gracza");
+    ui->startingWidget->setVisible(true);
+    ui->gameWidget->setVisible(false);
+    ui->pushButtonBack->setEnabled(false);
+
 }
