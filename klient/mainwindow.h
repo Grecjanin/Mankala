@@ -50,9 +50,10 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QPushButton *pits[14];
-    qint32 player;
+    qint32 player , currentPlayer;
     QTcpSocket *tcpSocket;
     QDataStream *stream;
+    QByteArray enemyName;
 
     void sendMove(int move);
 };

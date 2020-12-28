@@ -46,27 +46,33 @@ void MainWindow::readData()
     {
         for (int i=0;i<14 ;i++ ) {
             *stream >> temp;
-            qInfo() << temp<<"informacja \n ";
+            //qInfo() << temp<<"informacja \n ";
             pits[i]->setText(QString::number(temp));
+
         }
+        if(player == currentPlayer)ui->gameFlowLabel1->setText(ui->lineEditName->text());
+        else ui->gameFlowLabel1->setText(enemyName);
+        currentPlayer = (currentPlayer+1)%2;
     }
     else if(temp == 1)
     {
 
         *stream >> player;
         *stream>> temp;
-        QByteArray enemyName(temp, Qt::Uninitialized);
+        enemyName = QByteArray(temp, Qt::Uninitialized);
         stream->readRawData( enemyName.data() , temp);
-        qInfo() << enemyName<<" przeciwnik \n ";
+        qInfo() <<"nr gracza "<<player<<" " << enemyName<<" przeciwnik \n ";
         if(player)
         {
             ui->labelPlayer1->setText(ui->lineEditName->text());
             ui->labelPlayer0->setText(enemyName);
+
         }
         else
         {
             ui->labelPlayer0->setText(ui->lineEditName->text());
             ui->labelPlayer1->setText(enemyName);
+
         }
         for(int i=0;i<6;i++)
         {
@@ -83,11 +89,13 @@ void MainWindow::on_pushButtonStart_clicked()
 {
     ui->startingWidget->setVisible(false);
     ui->gameWidget->setVisible(true);
+    ui->pushButtonBack->setVisible(true);
 
 
     tcpSocket->connectToHost("127.0.0.1", 1234);
 
     tcpSocket->write(ui->lineEditName->text().toUtf8());
+    currentPlayer = 0;
 
     /*for(int i=0;i<6;i++)
     {
@@ -100,7 +108,9 @@ void MainWindow::on_pushButtonStart_clicked()
 
 void MainWindow::sendMove(int move)
 {
+
     *stream << move;
+
 }
 
 void MainWindow::on_pit7_clicked()
