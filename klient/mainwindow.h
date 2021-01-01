@@ -21,6 +21,9 @@ public:
 private slots:
     void readData();
 
+    void disconnected();
+    void connected();
+
     void on_pushButtonStart_clicked();
 
     void on_pit7_clicked();
@@ -62,5 +65,6 @@ private:
     void sendMove(int move);
     void readBoard();
     void back2menu();
+    void setUpEndGameGUI();
 };
 #endif // MAINWINDOW_H

@@ -15,7 +15,7 @@
 #include "GameLogic.h"
 
 #define SERVER_PORT 1234
-#define QUEUE_SIZE 5
+#define QUEUE_SIZE 10
 
 //struktura zawierająca dane, które zostaną przekazane do wątku
 struct thread_data_t
@@ -107,8 +107,8 @@ void *ThreadBehavior(void *t_data)
         int move[2];
         struct epoll_event_data * epollData = ev.data.ptr;
         int readBytes = read(epollData->my_fd, move, sizeof(int)*2);
-         
-        if ( readBytes>0 && ev.events==EPOLLIN )
+         printf("odczytano %d bajtów\n",readBytes);
+        if ( readBytes==sizeof(int)*2 && ev.events==EPOLLIN )//readBytes>0 wczesniej
         {
         		move[0] = ntohl(move[0]);
         		move[1] = ntohl(move[1]);
@@ -165,7 +165,12 @@ int main(int argc, char* argv[])
    memset(&server_address, 0, sizeof(struct sockaddr));
    server_address.sin_family = AF_INET;
    server_address.sin_addr.s_addr = htonl(INADDR_ANY);
+   if(argc == 1){
    server_address.sin_port = htons(SERVER_PORT);
+   }
+   else{
+   	server_address.sin_port = htons((unsigned short)strtoul(argv[1], NULL, 0));
+   }
 
    server_socket_descriptor = socket(AF_INET, SOCK_STREAM, 0);
    if (server_socket_descriptor < 0)
@@ -192,7 +197,7 @@ int main(int argc, char* argv[])
 	epoll_fd = epoll_create1(0);
 	if(epoll_fd == -1)
   {
-    fprintf(stderr, "Failed to create epoll file descriptor\n");
+    fprintf(stderr, "Błąd przy próbie utworzenia instancji epoll\n");
     exit(-1);
   }
 	

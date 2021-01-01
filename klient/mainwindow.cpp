@@ -8,7 +8,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
     stream = new QDataStream(tcpSocket);
     connect(tcpSocket, &QIODevice::readyRead, this, &MainWindow::readData);
-
+    connect(tcpSocket, &QTcpSocket::disconnected, this, &MainWindow::disconnected);
+    connect(tcpSocket, &QTcpSocket::connected, this, &MainWindow::connected);
     ui->setupUi(this);
     ui->gameWidget->setVisible(false);
     pits[0] = ui->pit0;
@@ -39,93 +40,124 @@ MainWindow::~MainWindow()
 
 void MainWindow::readData()
 {
-    qInfo()<<"Odebrano dane";
-    qint32 temp;
-    stream->startTransaction();
-    *stream >> temp;
-    if(temp == 2)//zwykły ruch
-    {
-        readBoard();
-        qInfo() << "Obecny gracz "<<currentPlayer;
-        if(player == currentPlayer)ui->gameFlowLabel1->setText(ui->lineEditName->text());
-        else ui->gameFlowLabel1->setText(enemyName);
-        currentPlayer = (currentPlayer+1)%2;
-
-    }
-    else if(temp == 1)//początkowe informacje
-    {
-
-        *stream >> player;
-        *stream>> temp;
-        enemyName = QByteArray(temp, Qt::Uninitialized);
-        //tutaj prawdopdobnie czasami jest ruch do tytułu
-        //serwerdwa razy wywołuje write i drugie pewnie nie zdąża czasami
-        stream->readRawData( enemyName.data() , temp);
-        qInfo() <<"nr gracza "<<player<<" " << enemyName<<" przeciwnik \n ";
-        if(player)
+    while(!tcpSocket->atEnd()){
+        qint32 temp;
+        stream->startTransaction();
+        *stream >> temp;
+        if(temp == 2)//zwykły ruch
         {
-            ui->labelPlayer1->setText(ui->lineEditName->text());
-            ui->labelPlayer0->setText(enemyName);
+            readBoard();
+            qInfo() << "Obecny gracz "<<currentPlayer;
+            if(player == currentPlayer)ui->gameFlowLabel1->setText(ui->lineEditName->text());
+            else ui->gameFlowLabel1->setText(enemyName);
+            currentPlayer = (currentPlayer+1)%2;
 
         }
-        else
+        else if(temp == 1)//początkowe informacje
         {
-            ui->labelPlayer0->setText(ui->lineEditName->text());
-            ui->labelPlayer1->setText(enemyName);
+
+            ui->gameWidget->setVisible(true);
+            ui->pushButtonBack->setVisible(false);
+
+            while (stream->atEnd()) {
+                ;
+            }
+            *stream >> player;
+            while (stream->atEnd()) {
+                ;
+            }
+            *stream>> temp;
+
+            enemyName = QByteArray(temp, Qt::Uninitialized);
+
+            int readData = 0;
+
+            while (readData != temp) {
+                int tempReadData = stream->readRawData( enemyName.data() + readData , temp);
+                if(tempReadData == -1)
+                {
+                    exit(-1);
+                }
+                readData += tempReadData;
+            }
+
+            qInfo() <<"nr gracza "<<player<<" " << enemyName<<" przeciwnik \n ";
+            if(player)
+            {
+                ui->labelPlayer1->setText(ui->lineEditName->text());
+                ui->labelPlayer0->setText(enemyName);
+
+            }
+            else
+            {
+                ui->labelPlayer0->setText(ui->lineEditName->text());
+                ui->labelPlayer1->setText(enemyName);
+
+            }
+            for(int i=0;i<6;i++)
+            {
+                pits[i + 7*((player+1)%2)]->setEnabled(false);
+            }
+
+
 
         }
-        for(int i=0;i<6;i++)
+        else if(temp == 3)//koniec gry
         {
-            pits[i + 7*((player+1)%2)]->setEnabled(false);
+            readBoard();
+            setUpEndGameGUI();
+            ui->gameFlowLabel0->setText("Wygrał");
+
+            while (stream->atEnd()) {
+                ;
+            }
+            *stream>> temp;
+
+            if(temp == -1)
+            {
+               ui->gameFlowLabel0->setText("Remis");
+               ui->gameFlowLabel1->setText("");
+            }
+            else if(player == temp)ui->gameFlowLabel1->setText(ui->lineEditName->text());
+            else ui->gameFlowLabel1->setText(enemyName);
+
         }
-
-
-    }
-    else if(temp == 3)//koniec gry
-    {
-        readBoard();
-        ui->pushButtonBack->setVisible(true);
-        ui->pushButtonBack->setEnabled(true);
-        ui->pushButtonSurrender->setEnabled(false);
-        ui->gameFlowLabel0->setText("Wygrał");
-        *stream>> temp;
-        if(temp == -1)
+        else if(temp == 4)//przeciwnik poddał się
         {
-           ui->gameFlowLabel0->setText("Remis");
-           ui->gameFlowLabel1->setText("");
+            ui->gameFlowLabel0->setText("Przeciwnik poddał się");
+            ui->gameFlowLabel1->setText("");
+            setUpEndGameGUI();
         }
-        else if(player == temp)ui->gameFlowLabel1->setText(ui->lineEditName->text());
-        else ui->gameFlowLabel1->setText(enemyName);
+        stream->commitTransaction();
 
     }
-    else if(temp == 4)//przeciwnik poddał się
-    {
-        ui->gameFlowLabel0->setText("Przeciwnik poddał się");
-        ui->gameFlowLabel1->setText("");
-        ui->pushButtonSurrender->setEnabled(false);
-        ui->pushButtonBack->setVisible(true);
-        ui->pushButtonBack->setEnabled(true);
+}
+
+
+void MainWindow::disconnected()
+{
+    //ui->gameFlowLabel0->setText("Utracono połączenie z serwerem");
+    //ui->gameFlowLabel1->setText("");
+    //setUpEndGameGUI();
+}
+
+void MainWindow::connected()
+{
+    if(tcpSocket->write(ui->lineEditName->text().toUtf8())==-1){
+        tcpSocket->disconnectFromHost();
+        ui->startingWidget->setVisible(true);
     }
-    stream->commitTransaction();
+
+    currentPlayer = 0;
 }
 
 
 void MainWindow::on_pushButtonStart_clicked()
 {
     ui->startingWidget->setVisible(false);
-    ui->gameWidget->setVisible(true);
-    ui->pushButtonBack->setVisible(false);
 
+    tcpSocket->connectToHost(ui->lineEditServerAdres->text(), ui->lineEditServerPort->text().toInt());
 
-    tcpSocket->connectToHost("127.0.0.1", 1234);
-
-    tcpSocket->write(ui->lineEditName->text().toUtf8());
-    currentPlayer = 0;
-
-    /*for(int i=0;i<6;i++)
-    {
-        pits[i + 7*player]->setEnabled(false);
-    }*/
 }
 
 
@@ -143,6 +175,9 @@ void MainWindow::readBoard()
 {
     qint32 temp;
     for (int i=0;i<14 ;i++ ) {
+        while (stream->atEnd()) {
+            ;
+        }
         *stream >> temp;
         //qInfo() << temp<<"informacja \n ";
         pits[i]->setText(QString::number(temp));
@@ -228,7 +263,7 @@ void MainWindow::on_pushButtonSurrender_clicked()
 
 void MainWindow::back2menu()
 {
-    tcpSocket->disconnectFromHost();
+    if(tcpSocket->isOpen())tcpSocket->disconnectFromHost();
     ui->gameFlowLabel0->setText("Ruch gracza");
     ui->startingWidget->setVisible(true);
     ui->gameWidget->setVisible(false);
@@ -238,6 +273,13 @@ void MainWindow::back2menu()
     {
         pits[i + 7*((player+1)%2)]->setEnabled(true);
     }
+}
+
+void MainWindow::setUpEndGameGUI()
+{
+    ui->pushButtonBack->setVisible(true);
+    ui->pushButtonBack->setEnabled(true);
+    ui->pushButtonSurrender->setEnabled(false);
 }
 
 

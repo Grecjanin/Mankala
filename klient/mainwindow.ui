@@ -74,6 +74,58 @@
       <string>Nazwa gracza</string>
      </property>
     </widget>
+    <widget class="QLabel" name="labelServerAdres">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>210</y>
+       <width>111</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Adres serwera</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="lineEditServerAdres">
+     <property name="geometry">
+      <rect>
+       <x>230</x>
+       <y>205</y>
+       <width>171</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>127.0.0.1</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="labelServerPort">
+     <property name="geometry">
+      <rect>
+       <x>130</x>
+       <y>250</y>
+       <width>91</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Port serwera</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="lineEditServerPort">
+     <property name="geometry">
+      <rect>
+       <x>230</x>
+       <y>240</y>
+       <width>171</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>1234</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QWidget" name="gameWidget" native="true">
     <property name="geometry">
