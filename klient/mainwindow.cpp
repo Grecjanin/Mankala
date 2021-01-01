@@ -26,6 +26,7 @@ MainWindow::MainWindow(QWidget *parent)
     pits[11] = ui->pit11;
     pits[12] = ui->pit12;
     pits[13] = ui->pit13;
+    isGameInProgress = false;
 
 
 
@@ -104,6 +105,7 @@ void MainWindow::readData()
         }
         else if(temp == 3)//koniec gry
         {
+            isGameInProgress = false;
             readBoard();
             setUpEndGameGUI();
             ui->gameFlowLabel0->setText("Wygrał");
@@ -122,8 +124,9 @@ void MainWindow::readData()
             else ui->gameFlowLabel1->setText(enemyName);
 
         }
-        else if(temp == 4)//przeciwnik poddał się
+        else if(temp == 4)//przeciwnik poddał się lub rozłączył z serwerem
         {
+            isGameInProgress = false;
             ui->gameFlowLabel0->setText("Przeciwnik poddał się");
             ui->gameFlowLabel1->setText("");
             setUpEndGameGUI();
@@ -136,9 +139,15 @@ void MainWindow::readData()
 
 void MainWindow::disconnected()
 {
-    //ui->gameFlowLabel0->setText("Utracono połączenie z serwerem");
-    //ui->gameFlowLabel1->setText("");
-    //setUpEndGameGUI();
+    if(isGameInProgress)
+    {
+        isGameInProgress = false;
+        ui->gameWidget->setVisible(true);
+        ui->gameFlowLabel0->setText("Utracono połączenie z serwerem");
+        ui->gameFlowLabel1->setText("");
+        setUpEndGameGUI();
+    }
+
 }
 
 void MainWindow::connected()
@@ -154,6 +163,7 @@ void MainWindow::connected()
 
 void MainWindow::on_pushButtonStart_clicked()
 {
+    isGameInProgress = true;
     ui->startingWidget->setVisible(false);
 
     tcpSocket->connectToHost(ui->lineEditServerAdres->text(), ui->lineEditServerPort->text().toInt());
@@ -255,6 +265,7 @@ void MainWindow::on_pushButtonBack_clicked()
 
 void MainWindow::on_pushButtonSurrender_clicked()
 {
+    isGameInProgress = false;
     int pom = 2;
     *stream <<pom<< pom;
     back2menu();

@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QPushButton>
 #include <QtNetwork>
-#include <arpa/inet.h>
+//#include <arpa/inet.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -61,6 +61,7 @@ private:
     QTcpSocket *tcpSocket;
     QDataStream *stream;
     QByteArray enemyName;
+    bool isGameInProgress;
 
     void sendMove(int move);
     void readBoard();
