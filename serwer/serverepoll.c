@@ -118,6 +118,7 @@ void *ThreadBehavior(void *t_data)
     //TODO
     for(;;) {
         epoll_wait(th_data->epoll_fd, &ev, 1, -1); //1 = maksymalnie jedno zdarzenie, -1 = bez timeout
+        //printf("EVENT %d\n",EPOLLHUP);
         if(ev.events==EPOLLIN)
         {
 		     int move[2];
@@ -255,7 +256,7 @@ int main(int argc, char* argv[])
        if (connection_socket_descriptor < 0)
        {
            fprintf(stderr, "%s: Błąd przy próbie utworzenia gniazda dla połączenia.\n", argv[0]);
-           break;
+           continue;
        }
        printf("Pierwsze polaczenie\n");
        struct epoll_event *ev1= (struct epoll_event *)malloc(sizeof(struct epoll_event));
@@ -279,7 +280,7 @@ int main(int argc, char* argv[])
            close(epollDataFirstPlayer->my_fd);
            free(ev1);
            freeMemory(epollDataFirstPlayer);
-           break;
+           continue;
        }
        printf("Drugie polaczenie\n");
        
@@ -306,7 +307,7 @@ int main(int argc, char* argv[])
        if(readBytes == -1){
        	cleanAfterErrorInInit(epollDataFirstPlayer , ev1,ev2);
          fprintf(stderr, "Błąd przy próbie odczytania nazwy gracza\n");
-       	break;
+       	continue;
        }
        
        buf[readBytes]=0;
@@ -314,23 +315,25 @@ int main(int argc, char* argv[])
        {
        	cleanAfterErrorInInit(epollDataFirstPlayer , ev1,ev2);
          fprintf(stderr, "Błąd przy próbie wysłania początkowych inforamcji\n");
-       	break;
+       	continue;
        }
        printf("Nazwa pierwszego gracza: %s, dlugość: %d\n",buf , readBytes);
        
        readBytes = read(epollDataSecondPlayer->my_fd, buf, sizeof(buf));
+       
        if(readBytes == -1){
+       	fprintf(stderr, "Błąd przy próbie odczytania nazwy gracza\n");
        	cleanAfterErrorInInit(epollDataSecondPlayer , ev1,ev2);
          fprintf(stderr, "Błąd przy próbie odczytania nazwy gracza\n");
-       	break;
+       	continue;
        }
        
        buf[readBytes]=0;
        if(sendInitInfo(buf ,epollDataFirstPlayer->player, epollDataFirstPlayer->my_fd)==-1)
        {
        	cleanAfterErrorInInit(epollDataFirstPlayer , ev1,ev2);
-         fprintf(stderr, "Błąd przy próbie wysłania początkowych inforamcji\n");
-       	break;
+         fprintf(stdout, "Błąd przy próbie wysłania początkowych inforamcji\n");
+       	continue;
        }
        printf("Nazwa drugiego gracza: %s, dlugość: %d\n",buf , readBytes);
        
@@ -339,12 +342,14 @@ int main(int argc, char* argv[])
        	sendSurrenderInfo(epollDataFirstPlayer->enemy_fd);
        	cleanAfterErrorInInit(epollDataFirstPlayer , ev1,ev2);
        	fprintf(stderr, "Błąd przy próbie wysłania początkowego stanu gry\n");
+       	continue;
        }
        if(sendGameState(*(epollDataSecondPlayer->gra) , epollDataSecondPlayer->my_fd) == -1)
        {
        	sendSurrenderInfo(epollDataSecondPlayer->enemy_fd);
        	cleanAfterErrorInInit(epollDataSecondPlayer , ev1,ev2);
        	fprintf(stderr, "Błąd przy próbie wysłania początkowego stanu gry\n");
+       	continue;
        } 
        printf("Wysłano grę\n"); 
          
@@ -352,14 +357,14 @@ int main(int argc, char* argv[])
          	sendSurrenderInfo(epollDataFirstPlayer->enemy_fd);
          	cleanAfterErrorInInit(epollDataSecondPlayer , ev1,ev2);
 		      fprintf(stderr, "Błąd przy próbie dołączenia połączenia do epoll\n");
-		    	break;
+		    	continue;
        }
        if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, epollDataSecondPlayer->my_fd, ev2) == -1) {
        		sendSurrenderInfo(epollDataSecondPlayer->enemy_fd);
          	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, epollDataFirstPlayer->my_fd, ev1);
          	cleanAfterErrorInInit(epollDataSecondPlayer , ev1,ev2);
 		      fprintf(stderr, "Błąd przy próbie dołączenia połączenia do epoll\n");
-		    	break;
+		    	continue;
        }
 
 
