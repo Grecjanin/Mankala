@@ -27,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent)
     pits[12] = ui->pit12;
     pits[13] = ui->pit13;
     isGameInProgress = false;
-
+    //stream->setVersion(18);
 
 
     player = 0;
@@ -57,6 +57,7 @@ void MainWindow::readData()
         else if(temp == 1)//początkowe informacje
         {
 
+            //qInfo()<<"Do odczytania "<<tcpSocket->bytesAvailable();
             ui->gameWidget->setVisible(true);
             ui->pushButtonBack->setVisible(false);
 
@@ -64,15 +65,19 @@ void MainWindow::readData()
                 ;
             }
             *stream >> player;
-            while (stream->atEnd()) {
+            /*while (stream->atEnd()) {
                 ;
             }
             *stream>> temp;
 
-            enemyName = QByteArray(temp, Qt::Uninitialized);
+
 
             int readData = 0;
-
+            char *str = new char[temp];
+            *stream >> str;
+            enemyName = str;
+            qInfo()<<str;
+            qInfo()<<stream->version();
             while (readData != temp) {
                 int tempReadData = stream->readRawData( enemyName.data() + readData , temp);
                 if(tempReadData == -1)
@@ -80,9 +85,11 @@ void MainWindow::readData()
                     exit(-1);
                 }
                 readData += tempReadData;
-            }
+            }*/
 
-            qInfo() <<"nr gracza "<<player<<" " << enemyName<<" przeciwnik \n ";
+            //qInfo() <<"nr gracza "<<player<<" " << enemyName<<" przeciwnik \n ";
+            enemyName = QByteArray(temp, Qt::Uninitialized);
+            enemyName = "Przeciwnik";
             if(player)
             {
                 ui->labelPlayer1->setText(ui->lineEditName->text());
@@ -152,10 +159,10 @@ void MainWindow::disconnected()
 
 void MainWindow::connected()
 {
-    if(tcpSocket->write(ui->lineEditName->text().toUtf8())==-1){
+    /*if(tcpSocket->write(ui->lineEditName->text().toUtf8())==-1){
         tcpSocket->disconnectFromHost();
         ui->startingWidget->setVisible(true);
-    }
+    }*/
 
     currentPlayer = 0;
 }

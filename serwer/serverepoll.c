@@ -20,7 +20,6 @@
 //struktura zawierająca dane, które zostaną przekazane do wątku
 struct thread_data_t
 {
-//TODO
 	int epoll_fd; 
 };
 
@@ -44,8 +43,6 @@ void foo(struct gameState gra)
 int sendGameState(struct gameState gra , int socket)
 {
 	int pom = 2;
-	//pom = htonl(pom);
-	//write(socket , &pom , sizeof(int));
 	int temp[15];
 	temp[0] = htonl(pom);
 	for(int i=0;i<14;i++)
@@ -59,18 +56,15 @@ int sendGameState(struct gameState gra , int socket)
 
 int sendInitInfo(char * name,int player , int socket)
 {
-	int pom[] ={1 ,player, strlen(name)};
-	for(int i=0;i<3;i++)pom[i] = htonl(pom[i]);
-	if(write(socket , pom , sizeof(pom)) == -1)return -1;
-	return write(socket , name , strlen(name));
+	int pom[] ={1 ,player};
+	for(int i=0;i<2;i++)pom[i] = htonl(pom[i]);	
+	return write(socket , pom , sizeof(pom));
 	
 }
 
 int sendEndingInfo(struct gameState gra , int socket)
 {
 	int pom = 3;
-	//pom = htonl(pom);
-	//write(socket , &pom , sizeof(int));
 	int temp[16];
 	temp[0]=htonl(pom);
 	for(int i=0;i<14;i++)
@@ -109,7 +103,7 @@ void cleanAfterGame(struct epoll_event_data * epollData , struct thread_data_t *
 
 
 
-//funkcja opisującą zachowanie wątku - musi przyjmować argument typu (void *) i zwracać (void *)
+//funkcja opisującą zachowanie wątku 
 void *ThreadBehavior(void *t_data)
 {
     pthread_detach(pthread_self());
@@ -168,10 +162,18 @@ void *ThreadBehavior(void *t_data)
 					}
        	}
        	else{
+       	
        		printf("Nieoczekiwane zamknięcie klienta\n");
        		sendSurrenderInfo(epollData->enemy_fd);
 				cleanAfterGame(epollData , th_data,&ev);
        	}	
+      }
+      else if(ev.events & EPOLLHUP)//wykryto odłączenie klienta
+      {
+      	struct epoll_event_data * epollData = ev.data.ptr;
+      	printf("Nieoczekiwane zamknięcie klienta\n");
+       		sendSurrenderInfo(epollData->enemy_fd);
+				cleanAfterGame(epollData , th_data,&ev);
       }   
     }
 
@@ -184,6 +186,7 @@ void cleanAfterErrorInInit(struct epoll_event_data * epollData , struct epoll_ev
       freeMemory(epollData);
       free(ev1);
       free(ev2);
+      
 }
 
 int main(int argc, char* argv[])
@@ -196,6 +199,13 @@ int main(int argc, char* argv[])
    int listen_result;
    char reuse_addr_val = 1;
    struct sockaddr_in server_address;
+   
+   struct sigaction act;   
+   memset(&act, '\0', sizeof(act));   
+   act.sa_handler = SIG_IGN;   
+   if (sigaction(SIGPIPE, &act, NULL)) 
+   {perror("sigaction");
+   exit(1);   }
 
    //inicjalizacja gniazda serwera
    
@@ -230,12 +240,12 @@ int main(int argc, char* argv[])
        exit(1);
    }
 	
-   //TODO stworzyć instancję epoll przez epoll_create1(0);
+   
 	epoll_fd = epoll_create1(0);
 	if(epoll_fd == -1)
   {
     fprintf(stderr, "Błąd przy próbie utworzenia instancji epoll\n");
-    exit(-1);
+    exit(1);
   }
 	
 		
@@ -302,40 +312,22 @@ int main(int argc, char* argv[])
        
        ev2->data.ptr = epollDataSecondPlayer;
        
-       char buf[100];
-       int readBytes = read(epollDataFirstPlayer->my_fd, buf, sizeof(buf));
-       if(readBytes == -1){
-       	cleanAfterErrorInInit(epollDataFirstPlayer , ev1,ev2);
-         fprintf(stderr, "Błąd przy próbie odczytania nazwy gracza\n");
-       	continue;
-       }
-       
-       buf[readBytes]=0;
+       char buf[100],buf1[100];
+
        if(sendInitInfo(buf ,epollDataSecondPlayer->player, epollDataSecondPlayer->my_fd)==-1)
        {
        	cleanAfterErrorInInit(epollDataFirstPlayer , ev1,ev2);
          fprintf(stderr, "Błąd przy próbie wysłania początkowych inforamcji\n");
        	continue;
        }
-       printf("Nazwa pierwszego gracza: %s, dlugość: %d\n",buf , readBytes);
-       
-       readBytes = read(epollDataSecondPlayer->my_fd, buf, sizeof(buf));
-       
-       if(readBytes == -1){
-       	fprintf(stderr, "Błąd przy próbie odczytania nazwy gracza\n");
-       	cleanAfterErrorInInit(epollDataSecondPlayer , ev1,ev2);
-         fprintf(stderr, "Błąd przy próbie odczytania nazwy gracza\n");
-       	continue;
-       }
-       
-       buf[readBytes]=0;
-       if(sendInitInfo(buf ,epollDataFirstPlayer->player, epollDataFirstPlayer->my_fd)==-1)
+
+       if(sendInitInfo(buf1 ,epollDataFirstPlayer->player, epollDataFirstPlayer->my_fd)==-1)
        {
        	cleanAfterErrorInInit(epollDataFirstPlayer , ev1,ev2);
-         fprintf(stdout, "Błąd przy próbie wysłania początkowych inforamcji\n");
+         fprintf(stderr, "Błąd przy próbie wysłania początkowych inforamcji\n");
        	continue;
        }
-       printf("Nazwa drugiego gracza: %s, dlugość: %d\n",buf , readBytes);
+
        
        if(sendGameState(*(epollDataFirstPlayer->gra) , epollDataFirstPlayer->my_fd) == -1)
        {
