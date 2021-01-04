@@ -57,7 +57,6 @@ void MainWindow::readData()
         else if(temp == 1)//początkowe informacje
         {
 
-            //qInfo()<<"Do odczytania "<<tcpSocket->bytesAvailable();
             ui->gameWidget->setVisible(true);
             ui->pushButtonBack->setVisible(false);
 
@@ -65,29 +64,7 @@ void MainWindow::readData()
                 ;
             }
             *stream >> player;
-            /*while (stream->atEnd()) {
-                ;
-            }
-            *stream>> temp;
 
-
-
-            int readData = 0;
-            char *str = new char[temp];
-            *stream >> str;
-            enemyName = str;
-            qInfo()<<str;
-            qInfo()<<stream->version();
-            while (readData != temp) {
-                int tempReadData = stream->readRawData( enemyName.data() + readData , temp);
-                if(tempReadData == -1)
-                {
-                    exit(-1);
-                }
-                readData += tempReadData;
-            }*/
-
-            //qInfo() <<"nr gracza "<<player<<" " << enemyName<<" przeciwnik \n ";
             enemyName = QByteArray(temp, Qt::Uninitialized);
             enemyName = "Przeciwnik";
             if(player)
